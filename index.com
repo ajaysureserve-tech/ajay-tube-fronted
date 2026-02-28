@@ -1,0 +1,106 @@
+<div class="search-box">
+<input type="text" id="ytQuery" placeholder="Search YouTube Videos...">
+<button onclick="searchVideos()"><i class="fa fa-search"></i></button>
+</div>
+
+<div id="audio-container" style="display:none; text-align:center; margin: 20px; background: #222; padding: 15px; border-radius: 10px;">
+<p id="audio-title" style="color: #fff; margin-bottom: 10px; font-weight: bold;"></p>
+<audio id="bgAudio" controls style="width: 100%;"></audio>
+<p style="color: #aaa; font-size: 12px; margin-top: 5px;">Ab aap screen off karke bhi sun sakte hain!</p>
+</div>
+
+<div id="player-container" style="display:none; margin: 20px auto; max-width: 800px;">
+<iframe id="mainPlayer" width="100%" height="450" src="" frameborder="0" allowfullscreen></iframe>
+</div>
+
+<div id="videoResults" class="video-grid"></div>
+
+<script>
+const API_KEY = 'AIzaSyBp9tuB1C-QYCSSGHgLu809PywUaXGGazk';
+
+async function searchVideos() {
+let q = document.getElementById('ytQuery').value;
+if(!q) return alert("Bhai, kuch toh likho!");
+
+document.getElementById('videoResults').innerHTML = '<p style="text-align:center; width:100%;">Searching...</p>';
+
+const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${q}&type=video&key=${API_KEY}`;
+
+try {
+const response = await fetch(url);
+const data = await response.json();
+
+if(data.items && data.items.length > 0) {
+displayResults(data.items);
+} else {
+document.getElementById('videoResults').innerHTML = '<p style="text-align:center; width:100%;">Koi video nahi mili!</p>';
+}
+} catch (error) {
+alert("API Limit ya Technical Error!");
+}
+}
+
+function displayResults(videos) {
+let html = '';
+videos.forEach(v => {
+const videoId = v.id.videoId;
+const title = v.snippet.title.replace(/'/g, ""); // Title clean up
+html += `
+<div class="video-card" style="background:#1e1e1e; border-radius:10px; overflow:hidden; margin:10px; padding-bottom: 10px;">
+<img src="${v.snippet.thumbnails.medium.url}" style="width:100%; cursor:pointer;" onclick="playVideo('${videoId}')">
+<div style="padding:10px;">
+<strong style="font-size:14px; display:block; height:40px; overflow:hidden;">${v.snippet.title}</strong>
+<p style="font-size:12px; color:#aaa; margin-top:5px;">${v.snippet.channelTitle}</p>
+
+<button onclick="playBackground('${videoId}', '${title}')" style="background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold;">
+Play Audio (Background)
+</button>
+
+<button onclick="startDownload('${videoId}')" style="background: #ff0000; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold;">
+Download Video (MP4)
+</button>
+</div>
+</div>`;
+});
+document.getElementById('videoResults').innerHTML = html;
+}
+
+function playVideo(id) {
+// Stop audio if playing
+document.getElementById('bgAudio').pause();
+document.getElementById('audio-container').style.display = "none";
+
+document.getElementById('player-container').style.display = "block";
+document.getElementById('mainPlayer').src = "https://www.youtube.com/embed/" + id + "?autoplay=1";
+window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Naya function jo background mein audio chalayega
+function playBackground(videoId, title) {
+// Stop video if playing
+document.getElementById('mainPlayer').src = "";
+document.getElementById('player-container').style.display = "none";
+
+const audioContainer = document.getElementById('audio-container');
+const audioPlayer = document.getElementById('bgAudio');
+const audioTitle = document.getElementById('audio-title');
+
+// Aapka Render URL jahan se audio link aayega
+const backendUrl = `https://ajay-api-backed.onrender.com/stream?url=https://www.youtube.com/watch?v=${videoId}`;
+
+audioTitle.innerText = "Playing: " + title;
+audioContainer.style.display = "block";
+audioPlayer.src = backendUrl;
+audioPlayer.play();
+
+window.scrollTo({ top: 0, behavior: 'smooth' });
+alert("Audio load ho raha hai... Ab aap screen off kar sakte hain.");
+}
+
+function startDownload(videoId) {
+const backendUrl = "https://ajay-api-backed.onrender.com/download";
+alert("Download process shuru ho gaya hai...");
+window.location.href = `${backendUrl}?url=https://www.youtube.com/watch?v=${videoId}`;
+}
+</script>
+
